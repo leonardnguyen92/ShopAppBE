@@ -2,6 +2,7 @@ package com.project.shopapp.controller;
 
 import java.util.List;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -13,7 +14,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.project.shopapp.dtos.ProductDTO;
 
@@ -33,8 +36,8 @@ public class ProductsController {
 		return ResponseEntity.ok(String.format("Product with id = %d load successfully", id));
 	}
 
-	@PostMapping("")
-	public ResponseEntity<?> insertProduct(@Valid @RequestBody ProductDTO product, BindingResult result) {
+	@PostMapping(value="",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<?> insertProduct(@Valid @RequestBody ProductDTO product,@RequestPart MultipartFile file, BindingResult result) {
 		if (result.hasErrors()) {
 			List<String> errorMessages = result.getFieldErrors().stream().map(FieldError::getDefaultMessage).toList();
 			return ResponseEntity.badRequest().body(errorMessages);
