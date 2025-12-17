@@ -36,8 +36,9 @@ public class CategoryService implements ICategoryService {
 	}
 
 	@Override
-	public Category getCategoryById(long id){
-		return categoryRepository.findById(id).orElseThrow(() -> new DataNotFoundException("Category not found with id: " + id));
+	public Category getCategoryById(long id) {
+		return categoryRepository.findById(id)
+				.orElseThrow(() -> new DataNotFoundException("Category not found with id: " + id));
 	}
 
 	@Override
@@ -58,7 +59,7 @@ public class CategoryService implements ICategoryService {
 	@Override
 	public void deleteCategory(long id) {
 		Category category = categoryRepository.findById(id).orElse(null);
-		if(category != null) {
+		if (category != null) {
 			category.setActive(false);
 			categoryRepository.save(category);
 		}

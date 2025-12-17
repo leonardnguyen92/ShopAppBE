@@ -3,7 +3,6 @@ package com.project.shopapp.entity;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -14,7 +13,6 @@ import lombok.NoArgsConstructor;
 /**
  * 
  */
-@Entity
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -28,7 +26,8 @@ public class BaseEntiry {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        if (createdAt == null)
+            createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
 
