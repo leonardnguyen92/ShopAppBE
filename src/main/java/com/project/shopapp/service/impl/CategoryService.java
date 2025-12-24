@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.project.shopapp.dtos.CategoryDTO;
 import com.project.shopapp.entity.Category;
 import com.project.shopapp.entity.Product;
+import com.project.shopapp.enums.CategoryStatus;
+import com.project.shopapp.enums.ProductStatus;
 import com.project.shopapp.exceptions.BusinessException;
 import com.project.shopapp.exceptions.DataNotFoundException;
 import com.project.shopapp.repository.CategoryRepository;
@@ -75,15 +77,12 @@ public class CategoryService implements ICategoryService {
 	@Transactional
 	public Category enableCategory(long id) {
 		Category existingCategory = getCategoryById(id);
-		existingCategory.setActive(true);
-		List<Product> products = productRepository.findByCategoryId(id);
+		existingCategory.setStatus(CategoryStatus.ACTIVE);
+		;
+		List<Product> products = productRepository.findByCategoryIdAndStatus(id, ProductStatus.DELETED_BY_CATEGORY);
 		for (Product product : products) {
-			if (!product.isDeletedByAdmin() && !product.isActive()) {
-				product.setActive(true);
-			}
+			product.setStatus(ProductStatus.ACTIVE);
 		}
-		productRepository.saveAll(products);
-		categoryRepository.save(existingCategory);
 		return existingCategory;
 	}
 
@@ -91,14 +90,11 @@ public class CategoryService implements ICategoryService {
 	@Transactional
 	public Category disableCategory(long id) {
 		Category existingCategory = getCategoryById(id);
-		existingCategory.setActive(false);
-		List<Product> products = productRepository.findByCategoryId(id);
+		existingCategory.setStatus(CategoryStatus.INACTIVE);
+		List<Product> products = productRepository.findByCategoryIdAndStatus(id, ProductStatus.ACTIVE);
 		for (Product product : products) {
-			product.setActive(false);
-
+			product.setStatus(ProductStatus.DELETED_BY_CATEGORY);
 		}
-		productRepository.saveAll(products);
-		categoryRepository.save(existingCategory);
 		return existingCategory;
 	}
 

@@ -2,6 +2,7 @@ package com.project.shopapp.controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -17,7 +18,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.shopapp.dtos.CategoryDTO;
+import com.project.shopapp.dtos.response.CategoryResponse;
 import com.project.shopapp.entity.Category;
+import com.project.shopapp.mapper.CategoryMapper;
 import com.project.shopapp.service.ICategoryService;
 
 import jakarta.validation.Valid;
@@ -29,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 public class CategoryController {
 
 	private final ICategoryService categoryService;
+	private final CategoryMapper categoryMapper;
 
 	@GetMapping("")
 	public ResponseEntity<?> getAllCategories(@RequestParam int page, @RequestParam int limit) {
@@ -44,8 +48,9 @@ public class CategoryController {
 						.toList();
 				return ResponseEntity.badRequest().body(errorMessages);
 			}
-			categoryService.createCategory(categoryDTO);
-			return ResponseEntity.ok("Create category sucsess: " + categoryDTO);
+			Category category = categoryService.createCategory(categoryDTO);
+			CategoryResponse response = categoryMapper.toResponse(category);
+			return ResponseEntity.status(HttpStatus.CREATED).body(response);
 		} catch (Exception e) {
 			return ResponseEntity.badRequest().body(e.getMessage());
 		}

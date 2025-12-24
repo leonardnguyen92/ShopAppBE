@@ -2,6 +2,8 @@ package com.project.shopapp.entity;
 
 import java.math.BigDecimal;
 
+import com.project.shopapp.enums.ProductStatus;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -32,11 +34,9 @@ public class Product extends BaseEntity {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive;
-
-    @Column(name = "deleted_by_admin", nullable = false)
-    private boolean deletedByAdmin;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30, nullable = false)
+    private ProductStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)

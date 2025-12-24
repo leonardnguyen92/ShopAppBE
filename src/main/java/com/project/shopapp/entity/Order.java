@@ -3,8 +3,12 @@ package com.project.shopapp.entity;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import com.project.shopapp.enums.OrderStatus;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -46,8 +50,9 @@ public class Order {
     @Column(name = "order_date")
     private LocalDate orderDate;
 
-    @Column(name = "order_status")
-    private String orderStatus;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30, nullable = false)
+    private OrderStatus status;
 
     @Column(name = "shipping_method")
     private String shippingMethod;

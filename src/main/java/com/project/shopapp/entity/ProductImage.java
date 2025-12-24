@@ -1,5 +1,7 @@
 package com.project.shopapp.entity;
 
+import com.project.shopapp.enums.ProductImageStatus;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -26,9 +28,7 @@ public class ProductImage {
     @Column(name = "image_url", nullable = false, length = 300)
     private String imageUrl;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive;
-
-    @Column(name = "deleted_by_admin", nullable = false)
-    private boolean deletedByAdmin;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30, nullable = false)
+    private ProductImageStatus status;
 }
