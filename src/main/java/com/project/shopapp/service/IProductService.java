@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 
 import com.project.shopapp.dtos.ProductDTO;
 import com.project.shopapp.dtos.ProductImageDTO;
+import com.project.shopapp.dtos.response.ProductImageResponse;
 import com.project.shopapp.dtos.response.ProductResponse;
 import com.project.shopapp.entity.Product;
 import com.project.shopapp.entity.ProductImage;
@@ -37,6 +38,13 @@ public interface IProductService {
      * @return
      */
     Page<ProductResponse> getAllProducts(Pageable pageable);
+
+    /**
+     * 
+     * @param pageable
+     * @return
+     */
+    Page<ProductResponse> getAllProductsForUser(Pageable pageable);
 
     /**
      * 
@@ -72,7 +80,7 @@ public interface IProductService {
      * @param productId
      * @param file
      * @return
-     * @throws IOException 
+     * @throws IOException
      */
-    List<ProductImage> uploadProductImages(long productId, List<MultipartFile> files) throws IOException;
+    List<ProductImageResponse> uploadProductImages(long productId, List<MultipartFile> files) throws IOException;
 }

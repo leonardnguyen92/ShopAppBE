@@ -7,7 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- *  Entity representing the Category table in the database
+ * Entity representing the Category table in the database
  */
 @Entity
 @Table(name = "categories")
@@ -20,10 +20,10 @@ public class Category {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-	
+
 	@Column(name = "name", nullable = false)
 	private String name;
-	
-	@Column(name = "is_active")
+
+	@Column(name = "is_active", nullable = false)
 	private boolean isActive;
 }

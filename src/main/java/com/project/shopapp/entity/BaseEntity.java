@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @MappedSuperclass
-public class BaseEntiry {
+public class BaseEntity {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

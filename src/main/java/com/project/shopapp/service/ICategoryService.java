@@ -53,7 +53,21 @@ public interface ICategoryService {
 	 * @param categoryDTO updated category data
 	 * @return updated Category entity
 	 */
-	Category updateCategory(long categoryId, CategoryDTO categoryDTO);
+	Category updateCategory(long id, CategoryDTO categoryDTO);
+
+	/**
+	 * 
+	 * @param categoryId
+	 * @return
+	 */
+	Category enableCategory(long id);
+
+	/**
+	 * 
+	 * @param categoryId
+	 * @return
+	 */
+	Category disableCategory(long id);
 
 	/**
 	 * Delete category by ID.</br>
@@ -61,6 +75,5 @@ public interface ICategoryService {
 	 *
 	 * @param id category identifier
 	 */
-	void deleteCategory(long id);
-
+	void forceDeleteCategory(long id);
 }

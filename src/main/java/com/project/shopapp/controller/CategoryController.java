@@ -7,6 +7,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -60,11 +61,31 @@ public class CategoryController {
 		}
 	}
 
-	@DeleteMapping("/{id}")
-	public ResponseEntity<String> deleteCategory(@PathVariable Long id) {
+	@DeleteMapping("/{id}/force")
+	public ResponseEntity<String> forceDeleteCategory(@PathVariable Long id) {
 		try {
-			categoryService.deleteCategory(id);
+			categoryService.forceDeleteCategory(id);
 			return ResponseEntity.ok(String.format("Delete category with ID = %d successfully", id));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+	}
+
+	@PatchMapping("/{id}/enable")
+	public ResponseEntity<?> enableCategory(@PathVariable Long id) {
+		try {
+			Category existingCategory = categoryService.enableCategory(id);
+			return ResponseEntity.ok(existingCategory);
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+	}
+
+	@PatchMapping("/{id}/disable")
+	public ResponseEntity<?> disableCategory(@PathVariable Long id) {
+		try {
+			Category existingCategory = categoryService.disableCategory(id);
+			return ResponseEntity.ok(existingCategory);
 		} catch (Exception e) {
 			return ResponseEntity.badRequest().body(e.getMessage());
 		}

@@ -14,11 +14,14 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import com.project.shopapp.dtos.ProductDTO;
 import com.project.shopapp.dtos.ProductImageDTO;
+import com.project.shopapp.dtos.response.ProductImageResponse;
 import com.project.shopapp.dtos.response.ProductResponse;
+import com.project.shopapp.dtos.response.summary.ProductSummary;
 import com.project.shopapp.entity.Category;
 import com.project.shopapp.entity.Product;
 import com.project.shopapp.entity.ProductImage;
@@ -93,6 +96,11 @@ public class ProductService implements IProductService {
     }
 
     @Override
+    public Page<ProductResponse> getAllProductsForUser(Pageable pageable) {
+        return productRepository.findAllActiveProducts(pageable).map(ProductResponse::fromProduct);
+    }
+
+    @Override
     public Product getProductById(long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Product cannot find with id: " + id));
@@ -116,24 +124,34 @@ public class ProductService implements IProductService {
 
     }
 
+    @Transactional
     @Override
-    public List<ProductImage> uploadProductImages(long productId, List<MultipartFile> files) throws IOException {
+    public List<ProductImageResponse> uploadProductImages(long productId, List<MultipartFile> files)
+            throws IOException {
         Product existingProduct = productRepository.findById(productId)
                 .orElseThrow(() -> new DataNotFoundException("Cannot find Product with id: " + productId));
         int currentCount = productImageRepository.countByProductId(productId);
         if ((currentCount + files.size()) > 5) {
             throw new InvalidParamException("Total images cannot exceed 5");
         }
-        List<ProductImage> newImages = new ArrayList<>();
+        ProductSummary productSummary = ProductSummary.builder()
+                .name(existingProduct.getName())
+                .description("")
+                .price(null)
+                .build();
+        List<ProductImageResponse> newImages = new ArrayList<>();
         for (MultipartFile file : files) {
             String fileName = storeFile(file);
-            ProductImage productImage = ProductImage.builder()
+            ProductImage savedImage = productImageRepository.save(ProductImage.builder()
                     .product(existingProduct)
                     .imageUrl(fileName)
-                    .build();
-            newImages.add(productImage);
+                    .build());
+            newImages.add(ProductImageResponse.builder()
+                    .id(savedImage.getId())
+                    .imageUrl(savedImage.getImageUrl())
+                    .productSummary(productSummary)
+                    .build());
         }
-        productImageRepository.saveAll(newImages);
 
         // Nếu product chưa có thumbnail thì gán ảnh được upload đầu tiên vào thumbnail
         if ((existingProduct.getThumbnail() == null || existingProduct.getThumbnail().isEmpty())
@@ -168,4 +186,5 @@ public class ProductService implements IProductService {
         String contentFile = file.getContentType();
         return contentFile != null && contentFile.startsWith("image/");
     }
+
 }
