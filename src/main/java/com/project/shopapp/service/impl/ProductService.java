@@ -25,6 +25,8 @@ import com.project.shopapp.dtos.response.summary.ProductSummary;
 import com.project.shopapp.entity.Category;
 import com.project.shopapp.entity.Product;
 import com.project.shopapp.entity.ProductImage;
+import com.project.shopapp.enums.CategoryStatus;
+import com.project.shopapp.enums.ProductStatus;
 import com.project.shopapp.exceptions.DataNotFoundException;
 import com.project.shopapp.exceptions.InvalidParamException;
 import com.project.shopapp.repository.CategoryRepository;
@@ -97,7 +99,8 @@ public class ProductService implements IProductService {
 
     @Override
     public Page<ProductResponse> getAllProductsForUser(Pageable pageable) {
-        return productRepository.findAllActiveProducts(pageable).map(ProductResponse::fromProduct);
+        return productRepository.findByStatusAndCategory_Status(ProductStatus.ACTIVE, CategoryStatus.ACTIVE, pageable)
+                .map(ProductResponse::fromProduct);
     }
 
     @Override

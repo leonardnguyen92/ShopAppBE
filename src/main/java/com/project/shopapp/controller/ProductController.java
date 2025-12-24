@@ -24,11 +24,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
 /**
  * 
@@ -80,7 +78,6 @@ public class ProductController {
         }
     }
 
-    
     @PutMapping("/{id}")
     public ResponseEntity<String> updateProduct(@PathVariable Long id) {
         return ResponseEntity.ok(String.format("Update product with id = %d successfully", id));
