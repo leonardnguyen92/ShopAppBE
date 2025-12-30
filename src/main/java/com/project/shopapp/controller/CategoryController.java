@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.shopapp.dtos.CategoryDTO;
+import com.project.shopapp.dtos.response.ApiResponse;
 import com.project.shopapp.dtos.response.CategoryResponse;
 import com.project.shopapp.entity.Category;
 import com.project.shopapp.mapper.CategoryMapper;
@@ -41,18 +42,25 @@ public class CategoryController {
 	}
 
 	@PostMapping("")
-	public ResponseEntity<?> createCategory(@Valid @RequestBody CategoryDTO categoryDTO, BindingResult result) {
+	public ResponseEntity<ApiResponse<CategoryResponse>> createCategory(@Valid @RequestBody CategoryDTO categoryDTO,
+			BindingResult result) {
+		ApiResponse<CategoryResponse> response = new ApiResponse<>();
 		try {
 			if (result.hasErrors()) {
+				response.setSuccess(false);
 				List<String> errorMessages = result.getFieldErrors().stream().map(FieldError::getDefaultMessage)
 						.toList();
-				return ResponseEntity.badRequest().body(errorMessages);
+				response.setErrors(errorMessages);
+				return ResponseEntity.badRequest().body(response);
 			}
-			Category category = categoryService.createCategory(categoryDTO);
-			CategoryResponse response = categoryMapper.toResponse(category);
+			response.setSuccess(true);
+			CategoryResponse categoryResponse = categoryMapper.toResponse(categoryService.createCategory(categoryDTO));
+			response.setData(categoryResponse);
 			return ResponseEntity.status(HttpStatus.CREATED).body(response);
 		} catch (Exception e) {
-			return ResponseEntity.badRequest().body(e.getMessage());
+			response.setSuccess(false);
+			response.setErrors(List.of(e.getMessage()));
+			return ResponseEntity.badRequest().body(response);
 		}
 	}
 

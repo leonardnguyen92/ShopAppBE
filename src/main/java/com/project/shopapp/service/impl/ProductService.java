@@ -1,38 +1,27 @@
 package com.project.shopapp.service.impl;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.Random;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-import org.springframework.web.multipart.MultipartFile;
+
+import com.github.javafaker.Faker;
 import com.project.shopapp.dtos.ProductDTO;
-import com.project.shopapp.dtos.ProductImageDTO;
-import com.project.shopapp.dtos.response.ProductImageResponse;
-import com.project.shopapp.dtos.response.ProductResponse;
-import com.project.shopapp.dtos.response.summary.ProductSummary;
 import com.project.shopapp.entity.Category;
 import com.project.shopapp.entity.Product;
-import com.project.shopapp.entity.ProductImage;
 import com.project.shopapp.enums.CategoryStatus;
 import com.project.shopapp.enums.ProductStatus;
+import com.project.shopapp.exceptions.BusinessException;
 import com.project.shopapp.exceptions.DataNotFoundException;
 import com.project.shopapp.exceptions.InvalidParamException;
 import com.project.shopapp.repository.CategoryRepository;
-import com.project.shopapp.repository.ProductImageRepository;
 import com.project.shopapp.repository.ProductRepository;
 import com.project.shopapp.service.IProductService;
+import com.project.shopapp.utils.PriceUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -45,7 +34,6 @@ public class ProductService implements IProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
-    private final ProductImageRepository productImageRepository;
 
     @Override
     public Product createProduct(ProductDTO productDTO) {
@@ -61,28 +49,17 @@ public class ProductService implements IProductService {
                 .price(productDTO.getPrice())
                 .thumbnail(productDTO.getThumbnail())
                 .description(productDTO.getDescription())
+                .status(ProductStatus.ACTIVE)
                 .category(existsingCategory)
                 .build();
         return productRepository.save(newProduct);
     }
 
     @Override
-    public ProductImage createProductImage(long productId, ProductImageDTO productImageDTO) {
-        Product existsingProduct = productRepository.findById(productId)
-                .orElseThrow(() -> new DataNotFoundException("Product not found with id: " + productId));
-        ProductImage newProductImage = ProductImage.builder().product(existsingProduct)
-                .imageUrl(productImageDTO.getImageUrl()).build();
-        int size = productImageRepository.countByProductId(productId);
-        if (size > 5) {
-            throw new InvalidParamException("Number of images must be <= 5");
-        }
-        return productImageRepository.save(newProductImage);
-    }
-
-    @Override
     public void deleteProduct(long id) {
-        Optional<Product> optionalProduct = productRepository.findById(id);
-        optionalProduct.ifPresent(productRepository::delete);
+        Product existingProduct = getProductById(id);
+        existingProduct.setStatus(ProductStatus.DELETED_BY_ADMIN);
+        productRepository.save(existingProduct);
     }
 
     @Override
@@ -91,16 +68,15 @@ public class ProductService implements IProductService {
     }
 
     @Override
-    public Page<ProductResponse> getAllProducts(Pageable pageable) {
+    public Page<Product> getAllProducts(Pageable pageable) {
         // Lấy danh sách sản phẩm theo trang(page) và giới hạn số sản phẩm hiển thị
         // trong 1 trang (limit)
-        return productRepository.findAll(pageable).map(ProductResponse::fromProduct);
+        return productRepository.findAll(pageable);
     }
 
     @Override
-    public Page<ProductResponse> getAllProductsForUser(Pageable pageable) {
-        return productRepository.findByStatusAndCategory_Status(ProductStatus.ACTIVE, CategoryStatus.ACTIVE, pageable)
-                .map(ProductResponse::fromProduct);
+    public Page<Product> getAllProductsForUser(Pageable pageable) {
+        return productRepository.findByStatusAndCategory_Status(ProductStatus.ACTIVE, CategoryStatus.ACTIVE, pageable);
     }
 
     @Override
@@ -110,84 +86,97 @@ public class ProductService implements IProductService {
     }
 
     @Override
-    public Product updateProduct(long id, ProductDTO productDTO) {
-        Product existsingProduct = getProductById(id);
-        if (existsingProduct != null) {
-            Category existsingCategory = categoryRepository.findById(productDTO.getCategoryId()).orElseThrow(
-                    () -> new DataNotFoundException("Category cannot find with id: " + productDTO.getCategoryId()));
-            existsingProduct.setName(productDTO.getName());
-            existsingProduct.setCategory(existsingCategory);
-            existsingProduct.setPrice(productDTO.getPrice());
-            existsingProduct.setThumbnail(productDTO.getThumbnail());
-            existsingProduct.setDescription(productDTO.getDescription());
-            return productRepository.save(existsingProduct);
-        } else {
-            throw new DataNotFoundException("Product not found with id: " + id);
-        }
-
-    }
-
     @Transactional
+    public Product updateProduct(long id, ProductDTO productDTO) {
+        Product existingProduct = getProductById(id);
+        Category existingCategory = categoryRepository.findById(productDTO.getCategoryId()).orElseThrow(
+                () -> new DataNotFoundException("Category cannot find with id: " + productDTO.getCategoryId()));
+        existingProduct.setName(productDTO.getName());
+        existingProduct.setCategory(existingCategory);
+        existingProduct.setPrice(productDTO.getPrice());
+        existingProduct.setThumbnail(productDTO.getThumbnail());
+        existingProduct.setDescription(productDTO.getDescription());
+        return existingProduct;
+
+    }
+
     @Override
-    public List<ProductImageResponse> uploadProductImages(long productId, List<MultipartFile> files)
-            throws IOException {
-        Product existingProduct = productRepository.findById(productId)
-                .orElseThrow(() -> new DataNotFoundException("Cannot find Product with id: " + productId));
-        int currentCount = productImageRepository.countByProductId(productId);
-        if ((currentCount + files.size()) > 5) {
-            throw new InvalidParamException("Total images cannot exceed 5");
-        }
-        ProductSummary productSummary = ProductSummary.builder()
-                .name(existingProduct.getName())
-                .description("")
-                .price(null)
-                .build();
-        List<ProductImageResponse> newImages = new ArrayList<>();
-        for (MultipartFile file : files) {
-            String fileName = storeFile(file);
-            ProductImage savedImage = productImageRepository.save(ProductImage.builder()
-                    .product(existingProduct)
-                    .imageUrl(fileName)
-                    .build());
-            newImages.add(ProductImageResponse.builder()
-                    .id(savedImage.getId())
-                    .imageUrl(savedImage.getImageUrl())
-                    .productSummary(productSummary)
-                    .build());
-        }
-
-        // Nếu product chưa có thumbnail thì gán ảnh được upload đầu tiên vào thumbnail
-        if ((existingProduct.getThumbnail() == null || existingProduct.getThumbnail().isEmpty())
-                && !newImages.isEmpty()) {
-            existingProduct.setThumbnail(newImages.get(0).getImageUrl());
-            productRepository.save(existingProduct);
-        }
-        return newImages;
+    @Transactional
+    public Product restoreProduct(long id) {
+        Product existingProduct = productRepository
+                .findByIdAndStatusAndCategory_Status(id, ProductStatus.DELETED_BY_ADMIN, CategoryStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(
+                        "Product " + id + " does not exist or is not DELETED_BY_ADMIN"));
+        existingProduct.setStatus(ProductStatus.INACTIVE);
+        return existingProduct;
     }
 
-    private String storeFile(MultipartFile file) throws IOException {
-        if (!isImageFile(file) || file.getOriginalFilename() == null) {
-            throw new IOException("Invalid Image Format");
-        }
-        String fileName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-        // Thêm UUID vào trước tên file để đảm bảo tên file là duy nhất
-        String uniqueFileName = UUID.randomUUID().toString() + "_" + fileName;
-        // Đường dẫn thư mục bạn muốn lưu file
-        Path uploadDir = Paths.get("uploads");
-        // Kiểm tra và tạo thư mục nếu nó không tồn tại
-        if (!Files.exists(uploadDir)) {
-            Files.createDirectories(uploadDir);
-        }
-        // Đường dẫn đầy đủ đến file
-        Path destination = Paths.get(uploadDir.toString(), uniqueFileName);
-        // Sao chép file vào thư mục đích
-        Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
-        return uniqueFileName;
+    @Override
+    @Transactional
+    public void forceDeleteProduct(long id) {
+        Product existingProduct = productRepository.findByIdAndStatus(id, ProductStatus.DELETED_BY_ADMIN)
+                .orElseThrow(() -> new BusinessException(
+                        "Product " + id + " does not exist or is not DELETED_BY_ADMIN"));
+
+        productRepository.delete(existingProduct);
     }
 
-    private boolean isImageFile(MultipartFile file) {
-        String contentFile = file.getContentType();
-        return contentFile != null && contentFile.startsWith("image/");
+    @Override
+    @Transactional
+    public Product enableProduct(long id) {
+        Product existingProduct = productRepository
+                .findByIdAndStatusAndCategory_Status(id, ProductStatus.INACTIVE, CategoryStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException("Product " + id + " does not exist or is not INACTIVE"));
+        existingProduct.setStatus(ProductStatus.ACTIVE);
+        return existingProduct;
+    }
+
+    @Override
+    @Transactional
+    public Product disableProduct(long id) {
+        Product existingProduct = productRepository.findByIdAndStatus(id, ProductStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(
+                        "Product " + id + " does not exist or is not ACTIVE"));
+        existingProduct.setStatus(ProductStatus.INACTIVE);
+        return existingProduct;
+    }
+
+    @Override
+    @Transactional
+    public void generateFakeProducts(int totalRecords) {
+        Faker faker = new Faker();
+        List<Product> batch = new ArrayList<>();
+        List<Category> category = categoryRepository.findByStatus(CategoryStatus.ACTIVE);
+        if (category == null || category.isEmpty()) {
+            throw new DataNotFoundException("Cannot found Category");
+        }
+        int batchSize = 500;
+        Random random = new Random();
+        int created = 0;
+        while (created < totalRecords) {
+            long fakePrice = faker.number().numberBetween(10000, 100000000);
+            Product product = Product.builder()
+                    .name(faker.commerce().productName())
+                    .price(PriceUtils.roundPrice(fakePrice))
+                    .thumbnail(null)
+                    .description(faker.lorem().sentence())
+                    .status(ProductStatus.ACTIVE)
+                    .category(category.get(random.nextInt(category.size())))
+                    .build();
+            batch.add(product);
+            created++;
+            if (batch.size() >= batchSize) {
+                productRepository.saveAll(batch);
+                productRepository.flush();
+                batch.clear();
+                System.out.println("Inserted " + created + " products");
+            }
+
+        }
+        if (!batch.isEmpty()) {
+            productRepository.saveAll(batch);
+            productRepository.flush();
+        }
     }
 
 }

@@ -1,19 +1,10 @@
 package com.project.shopapp.service;
 
 import org.springframework.data.domain.Pageable;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.util.List;
-
 import org.springframework.data.domain.Page;
 
 import com.project.shopapp.dtos.ProductDTO;
-import com.project.shopapp.dtos.ProductImageDTO;
-import com.project.shopapp.dtos.response.ProductImageResponse;
-import com.project.shopapp.dtos.response.ProductResponse;
 import com.project.shopapp.entity.Product;
-import com.project.shopapp.entity.ProductImage;
 
 /** */
 public interface IProductService {
@@ -37,14 +28,14 @@ public interface IProductService {
      * @param pageable
      * @return
      */
-    Page<ProductResponse> getAllProducts(Pageable pageable);
+    Page<Product> getAllProducts(Pageable pageable);
 
     /**
      * 
      * @param pageable
      * @return
      */
-    Page<ProductResponse> getAllProductsForUser(Pageable pageable);
+    Page<Product> getAllProductsForUser(Pageable pageable);
 
     /**
      * 
@@ -55,6 +46,9 @@ public interface IProductService {
     Product updateProduct(long id, ProductDTO productDTO);
 
     /**
+     * DELETE:
+     * - product.status ∈ {ACTIVE, INACTIVE}
+     * → product.status = DELETED_BY_ADMIN
      * 
      * @param id
      */
@@ -68,19 +62,50 @@ public interface IProductService {
     boolean existsByName(String name);
 
     /**
+     * RESTORE:
+     * - product.status == DELETED_BY_ADMIN
+     * - AND category.status == ACTIVE
+     * → product.status = INACTIVE
      * 
-     * @param productId
-     * @param productImageDTO
+     * @param id
      * @return
      */
-    ProductImage createProductImage(long productId, ProductImageDTO productImageDTO);
+    Product restoreProduct(long id);
+
+    /**
+     * FORCE DELETE:
+     * - product.status == DELETED_BY_ADMIN
+     * → remove DB + images + mappings
+     * 
+     * @param id
+     */
+    void forceDeleteProduct(long id);
+
+    /**
+     * ENABLE:
+     * - product.status == INACTIVE
+     * - AND category.status == ACTIVE
+     * → product.status = ACTIVE
+     * 
+     * @param id
+     * @return
+     */
+    Product enableProduct(long id);
+
+    /**
+     * DISABLE:
+     * - product.status == ACTIVE
+     * → product.status = INACTIVE
+     * 
+     * @param id
+     * @return
+     */
+    Product disableProduct(long id);
 
     /**
      * 
-     * @param productId
-     * @param file
+     * @param total
      * @return
-     * @throws IOException
      */
-    List<ProductImageResponse> uploadProductImages(long productId, List<MultipartFile> files) throws IOException;
+    void generateFakeProducts(int totalRecords);
 }
